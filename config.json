@@ -1,0 +1,15 @@
+{
+    "project_name": "Techcore Internship",
+    "version": "1.0",
+    "debug": true,
+    "database": {
+        "host": "localhost",
+        "port": 5432,
+        "user": "admin",
+        "password": "admin"
+    },
+    "allowed_hosts": [
+        "172.0.0.1",
+        "localhost"
+    ]
+}
