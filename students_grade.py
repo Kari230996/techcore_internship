@@ -6,14 +6,8 @@ students = [
     {"name": "Грегори", "age": 16, "avg_grade": 4.5}
 ]
 
-def filter_students_by_grade(students_list, min_grade=4.0):
-    filtered = []
-    for student in students_list:
-        if student["avg_grade"] > min_grade:
-            filtered.append(student)
-    return filtered
+filtered_students = [student for student in students if student["avg_grade"] > 4.0]
 
-filtered_students = filter_students_by_grade(students, 4.0)
 
 print("Студенты со средним баллом выше 4.0:")
 for student in filtered_students:
