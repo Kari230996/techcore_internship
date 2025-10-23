@@ -1,5 +1,6 @@
 from multiprocessing import Process
 
+
 def heavy_task():
     """Имитация CPU-bound задачи"""
     print("Начало вычислений...")
@@ -22,3 +23,5 @@ if __name__ == "__main__":
 
     process.join()
     print("Вычисления завершены")
+
+
