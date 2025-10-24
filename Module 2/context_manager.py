@@ -1,4 +1,8 @@
 class DatabaseConnection:
+    def __init__(self, db_name):
+        self.db_name = db_name
+        self.conn = None
+
     def __enter__(self):
         """Открывает соединение (эмуляция)."""
         self.conn = "Соединение с базой данных установлено"
