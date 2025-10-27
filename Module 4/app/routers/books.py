@@ -29,7 +29,7 @@ async def create_book(book: BookSchema):
 async def get_books(book_id: int):
     await asyncio.sleep(0.5)
     if book_id not in books_db:
-        return HTTPException(status_code=404, detail={"error": "Книга не найдена"})
+        return HTTPException(status_code=404, detail={"Книга не найдена"})
     return {"id": book_id, "title": books_db[book_id].title,
             "year": books_db[book_id].year}
 
@@ -38,7 +38,7 @@ async def get_books(book_id: int):
 async def update_book(book_id: int, book: BookSchema):
     await asyncio.sleep(0.5)
     if book_id not in books_db:
-        return HTTPException(status_code=404, detail={"error": "Книга не найдена"})
+        return HTTPException(status_code=404, detail={"Книга не найдена"})
     books_db[book_id] = book
     return {"message": f"Книга {book.title} обновлена!"}
 
@@ -47,7 +47,7 @@ async def update_book(book_id: int, book: BookSchema):
 async def delete_book(book_id: int):
     await asyncio.sleep(0.5)
     if book_id not in books_db:
-        return HTTPException(status_code=404, detail={"error": "Книга не найдена"})
+        return HTTPException(status_code=404, detail={"Книга не найдена"})
     del books_db[book_id]
     return {"message": f"Книга {book_id} удалена!"}
 
