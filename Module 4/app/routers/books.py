@@ -1,16 +1,11 @@
-from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
+from fastapi import HTTPException, Depends, APIRouter
+
+from app.schemas.books import BookSchema
+
+router = APIRouter(prefix="/books", tags=["Книги"])
 
 
-app = FastAPI()
-
-
-class BookSchema(BaseModel):
-    title: str
-    year: int | None = None
-
-
-@app.get("/")
+@router.get("/")
 async def root():
     return {"message": "Hello World"}
 
@@ -20,14 +15,14 @@ books_db = {}
 
 
 # CRUD-операции
-@app.post("/books")
+@router.post("/books")
 async def create_book(book: BookSchema):
     book_id = len(books_db) + 1
     books_db[book_id] = book
     return {"message": f"Книга {book.title} создана!"}
 
 
-@app.get("/books/{book_id}")
+@router.get("/books/{book_id}")
 async def get_books(book_id: int):
     if book_id not in books_db:
         return HTTPException(status_code=404, detail={"error": "Книга не найдена"})
@@ -35,7 +30,7 @@ async def get_books(book_id: int):
             "year": books_db[book_id].year}
 
 
-@app.put("/books/{book_id}")
+@router.put("/books/{book_id}")
 async def update_book(book_id: int, book: BookSchema):
     if book_id not in books_db:
         return HTTPException(status_code=404, detail={"error": "Книга не найдена"})
@@ -43,7 +38,7 @@ async def update_book(book_id: int, book: BookSchema):
     return {"message": f"Книга {book.title} обновлена!"}
 
 
-@app.delete("/books/{book_id}")
+@router.delete("/books/{book_id}")
 async def delete_book(book_id: int):
     if book_id not in books_db:
         return HTTPException(status_code=404, detail={"error": "Книга не найдена"})
@@ -51,7 +46,7 @@ async def delete_book(book_id: int):
     return {"message": f"Книга {book_id} удалена!"}
 
 
-@app.get("/books")
+@router.get("/books")
 async def get_all_books():
     return books_db
 
@@ -78,7 +73,7 @@ def get_db_session():
         db.close()
 
 
-@app.post("/books_di")
+@router.post("/books_di")
 async def create_book(book: BookSchema, db: Session = Depends(get_db_session)):
     result = db.query()
     return {"message": "Книга создана", "result": result}
