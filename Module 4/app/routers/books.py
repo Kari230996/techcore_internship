@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import HTTPException, Depends, APIRouter
 
 from app.schemas.books import BookSchema
@@ -7,6 +8,7 @@ router = APIRouter(prefix="/books", tags=["Книги"])
 
 @router.get("/")
 async def root():
+    await asyncio.sleep(0.3)
     return {"message": "Hello World"}
 
 
@@ -17,6 +19,7 @@ books_db = {}
 # CRUD-операции
 @router.post("/books")
 async def create_book(book: BookSchema):
+    await asyncio.sleep(0.5)
     book_id = len(books_db) + 1
     books_db[book_id] = book
     return {"message": f"Книга {book.title} создана!"}
@@ -24,6 +27,7 @@ async def create_book(book: BookSchema):
 
 @router.get("/books/{book_id}")
 async def get_books(book_id: int):
+    await asyncio.sleep(0.5)
     if book_id not in books_db:
         return HTTPException(status_code=404, detail={"error": "Книга не найдена"})
     return {"id": book_id, "title": books_db[book_id].title,
@@ -32,6 +36,7 @@ async def get_books(book_id: int):
 
 @router.put("/books/{book_id}")
 async def update_book(book_id: int, book: BookSchema):
+    await asyncio.sleep(0.5)
     if book_id not in books_db:
         return HTTPException(status_code=404, detail={"error": "Книга не найдена"})
     books_db[book_id] = book
@@ -40,6 +45,7 @@ async def update_book(book_id: int, book: BookSchema):
 
 @router.delete("/books/{book_id}")
 async def delete_book(book_id: int):
+    await asyncio.sleep(0.5)
     if book_id not in books_db:
         return HTTPException(status_code=404, detail={"error": "Книга не найдена"})
     del books_db[book_id]
@@ -48,6 +54,7 @@ async def delete_book(book_id: int):
 
 @router.get("/books")
 async def get_all_books():
+    await asyncio.sleep(0.2)
     return books_db
 
 
@@ -57,15 +64,16 @@ class Session:
         print("Открываем соединение с базой...")
         self.conntection = "db_connection"
 
-    def query(self):
+    async def query(self):
         print("Выполняем запрос...")
+        await asyncio.sleep(1)
         return "Результат запроса"
 
     def close(self):
         print("Закрываем соединение...")
 
 
-def get_db_session():
+async def get_db_session():
     db = Session()
     try:
         yield db
@@ -75,5 +83,5 @@ def get_db_session():
 
 @router.post("/books_di")
 async def create_book(book: BookSchema, db: Session = Depends(get_db_session)):
-    result = db.query()
+    result = await db.query()
     return {"message": "Книга создана", "result": result}
