@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 
 
@@ -54,3 +54,31 @@ async def delete_book(book_id: int):
 @app.get("/books")
 async def get_all_books():
     return books_db
+
+
+# DI
+class Session:
+    def __init__(self):
+        print("Открываем соединение с базой...")
+        self.conntection = "db_connection"
+
+    def query(self):
+        print("Выполняем запрос...")
+        return "Результат запроса"
+
+    def close(self):
+        print("Закрываем соединение...")
+
+
+def get_db_session():
+    db = Session()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@app.post("/books_di")
+async def create_book(book: BookSchema, db: Session = Depends(get_db_session)):
+    result = db.query()
+    return {"message": "Книга создана", "result": result}
