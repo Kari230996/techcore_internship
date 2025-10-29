@@ -26,7 +26,10 @@ class Book(Base):
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=True)
 
+    # Ссылка на автора
     author_id: Mapped[int] = mapped_column(ForeignKey("authors.id"))
+
+    # Отношение - книга принадлежит автору
     author: Mapped["Author"] = relationship("Author", back_populates="books")
 
     def __repr__(self):
