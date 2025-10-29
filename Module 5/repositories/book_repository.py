@@ -1,4 +1,5 @@
-from sqlalchemy import select, update, delete
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from models import Book
 from database import async_session_maker
@@ -25,8 +26,11 @@ class BookRepository:
     @staticmethod
     async def get_all():
         async with async_session_maker() as session:
-            result = await session.execute(select(Book))
-            return result.scalars().all()
+            result = await session.execute(
+                select(Book).options(selectinload(Book.author))
+            )
+            books = result.scalars().all()
+            return books
 
     @staticmethod
     async def update(book_id: int, book_data):
