@@ -1,15 +1,18 @@
 from fastapi import APIRouter, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends
 
 from schemas.books import BookSchema
 from repositories.book_repository import BookRepository
+from database import get_db_session
 
 
 router = APIRouter(prefix="/books", tags=["Книги"])
 
 
 @router.post("/")
-async def create_book(book: BookSchema):
-    new_book = await BookRepository.create(book)
+async def create_book(book: BookSchema, db: AsyncSession = Depends(get_db_session)):
+    new_book = await BookRepository.create(db, book)
     return {"message": "Книга создана", "book": new_book}
 
 
