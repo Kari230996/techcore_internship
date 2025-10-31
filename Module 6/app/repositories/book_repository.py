@@ -4,6 +4,7 @@ from sqlalchemy import select, update
 from app.models import Book
 from app.database import async_session_maker
 from app.redis_client import redis_client
+from app.services.cache_service import CacheInvalidationService
 
 
 class BookRepository:
@@ -54,9 +55,10 @@ class BookRepository:
             updated_book = result.scalar_one_or_none()
 
             if updated_book:
-                cache_key = f"book:{book_id}"
-                await redis_client.delete(cache_key)
-                print(
-                    f"Книга обновлена в базе данных и удалена из кэша по ключу {cache_key}")
+                await redis_client.delete(f"book:{book_id}")
+
+                # публикуем событие для других Pod
+                await CacheInvalidationService.publish_invalidation(book_id)
+                print(f"Книга обновлена и кэш синхронизирован через Pub/Sub")
 
             return updated_book
