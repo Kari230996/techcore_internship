@@ -14,3 +14,11 @@ async def get_book(book_id: int, db: AsyncSession = Depends(get_db_session)):
     if not book:
         return {"error": "Книга не найдена"}
     return book
+
+
+@router.put("/{books_id}")
+async def update_book(books_id: int, new_date: dict, db: AsyncSession = Depends(get_db_session)):
+    update_book = await BookRepository.update(books_id, new_date)
+    if not update_book:
+        return {"error": "Книга не найдена"}
+    return {"message": "Книга обновлена", "book": update_book}
