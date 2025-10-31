@@ -4,7 +4,7 @@ from redis import asyncio as aioredis
 
 async def test_redis_conn():
     redis_client = aioredis.Redis(
-        host="localhost",
+        host="localhost", # redis_db, если в Docker
         port=6379,
         decode_responses=True
     )
