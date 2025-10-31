@@ -9,3 +9,4 @@ client = AsyncIOMotorClient(MONGO_URL)
 mongo_db = client["books_mongo_db"]
 
 books_collection = mongo_db["books"]
+reviews_collection = mongo_db["reviews"]
