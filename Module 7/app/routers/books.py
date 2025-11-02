@@ -8,6 +8,7 @@ from app.database import get_db_session
 router = APIRouter(prefix="/books", tags=["Книги"])
 
 
+
 @router.post("/")
 async def create_book(book: BookSchema, db: AsyncSession = Depends(get_db_session)):
     # для теста
