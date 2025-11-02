@@ -3,6 +3,7 @@ import pytest
 from app.services.book_service import BookService
 
 
+# pytest-asyncio
 @pytest.mark.asyncio
 async def test_get_book_with_mocked_repo(mocker):
     mocked_repo = mocker.patch(
