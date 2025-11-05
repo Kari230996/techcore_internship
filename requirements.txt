@@ -37,6 +37,7 @@ packaging==25.0
 pluggy==1.6.0
 propcache==0.4.1
 psycopg2-binary==2.9.11
+pybreaker==1.4.1
 pycodestyle==2.14.0
 pydantic==2.12.3
 pydantic_core==2.41.4

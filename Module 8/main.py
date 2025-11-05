@@ -8,4 +8,5 @@ async def main():
     print("Результат:", result)
     await service.close()
 
+
 asyncio.run(main())
