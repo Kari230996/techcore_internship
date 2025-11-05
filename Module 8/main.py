@@ -3,9 +3,9 @@ from author_service import AuthorService
 
 
 async def main():
-    author_service = AuthorService("https://jsonplaceholder.typicode.com")
-    author = await author_service.get_author(1)
-    print(author)
+    author_service = AuthorService("https://httpbin.org")
+    result = await author_service.get_author("delay/5")
+    print(result)
     await author_service.close()
 
 asyncio.run(main())
