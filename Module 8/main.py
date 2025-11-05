@@ -3,9 +3,9 @@ from author_service import AuthorService
 
 
 async def main():
-    author_service = AuthorService("https://httpbin.org")
-    result = await author_service.get_author("delay/5")
-    print(result)
-    await author_service.close()
+    service = AuthorService("https://httpbin.org/status")
+    result = await service.get_author(503)
+    print("Результат:", result)
+    await service.close()
 
 asyncio.run(main())
