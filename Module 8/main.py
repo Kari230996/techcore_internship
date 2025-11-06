@@ -1,20 +1,22 @@
 import asyncio
-import httpx
+import aiohttp
 
 
 async def fetch_author():
-    async with httpx.AsyncClient() as client:
+    async with aiohttp.ClientSession() as client:
         response = await client.get("https://jsonplaceholder.typicode.com/users/1")
         response.raise_for_status()
-        return {"author": response.json()["name"]}
+        data = await response.json()
+        return {"author": data["name"]}
 
 
 async def fetch_reviews():
-    async with httpx.AsyncClient() as client:
+    async with aiohttp.ClientSession() as client:
         response = await client.get("https://jsonplaceholder.typicode.com/comments?postId=1")
         response.raise_for_status()
+        data = await response.json()
         # первые 3 отзыва
-        return {"reviews": [r["email"] for r in response.json()[:3]]}
+        return {"reviews": [r["email"] for r in data[:3]]}
 
 
 async def main():
