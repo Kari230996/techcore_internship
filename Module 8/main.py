@@ -1,26 +1,33 @@
 import asyncio
-from author_service import AuthorService
-from services.book_service import BookService
+import httpx
 
 
-async def simulate_requests(i):
-    print(f"--- Запрос {i} начался ---")
-    await BookService.get_book(1)
-    print(f"--- Запрос {i} завершился ---")
+async def fetch_author():
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://jsonplaceholder.typicode.com/users/1")
+        response.raise_for_status()
+        return {"author": response.json()["name"]}
+
+
+async def fetch_reviews():
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://jsonplaceholder.typicode.com/comments?postId=1")
+        response.raise_for_status()
+        # первые 3 отзыва
+        return {"reviews": [r["email"] for r in response.json()[:3]]}
 
 
 async def main():
-    await asyncio.gather(*(simulate_requests(i) for i in range(1, 11)))
+    print("Запрос данных об авторе и отзывах...")
 
-    # service = AuthorService("https://httpbin.org/status")
+    task1 = fetch_author()
+    task2 = fetch_reviews()
 
-    # for i in range(6):
-    #     print(f"\n--- Запрос {i + 1} ---")
+    author_data, review_data = await asyncio.gather(task1, task2)
 
-    #     result = await service.get_author(503)
-    #     print(result)
-    #     await asyncio.sleep(0.5)
-    # await service.close()
+    combined = {**author_data, **review_data}
+    print("Результат:", combined)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
