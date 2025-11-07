@@ -46,7 +46,21 @@ services:
       interval: 10s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_db
+    ports:
+      - "5672:5672"
+      - "15772:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
 volumes:
   pg_data:
   redis_data:
   mongo_data:
+  rabbitmq_data:
