@@ -1,26 +1,17 @@
-# app/main.py
-from fastapi import FastAPI
-from app.core.celery_app import celery_app
-from app.redis_client import redis_client
-from fastapi.middleware.cors import CORSMiddleware
+
+from fastapi import FastAPI, status
+
+from app.worker_service import process_order
+
 
 app = FastAPI(title="Techcore Internship API")
 
-# CORS - чтобы можно было тестировать из браузера
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# Пример маршрута
-
-
-@app.get("/")
-def root():
-    return {"message": "🚀 FastAPI + Celery + Redis + RabbitMQ работают!"}
-
-
-
+@app.post("/order", status_code=status.HTTP_202_ACCEPTED)
+async def create_order(order_id: int):
+    task = process_order.delay(order_id)
+    return {
+        "message": f"Заказ {order_id} отправлен в очередь на обработку.",
+        "task_id": task.id,
+        "status": "queued"
+    }

@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   postgres_db:
     image: postgres:15
@@ -54,6 +56,23 @@ services:
     environment:
       - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq_db:5672//
       - CELERY_RESULT_BACKEND=redis://redis_db:6379/0
+
+  fastapi_app:
+    build:
+      context: ./Module 9
+      dockerfile: Dockerfile
+    container_name: fastapi_app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./Module 9:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis_db
+      - rabbitmq_db
+      - postgres_db
+    environment:
+      - PYTHONPATH=/app
 
 volumes:
   pg_data:
