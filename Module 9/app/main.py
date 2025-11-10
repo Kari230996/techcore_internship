@@ -21,3 +21,6 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {"message": "🚀 FastAPI + Celery + Redis + RabbitMQ работают!"}
+
+
+
