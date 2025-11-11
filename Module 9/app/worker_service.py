@@ -1,3 +1,4 @@
+from datetime import datetime
 import time
 from app.core.celery_app import celery_app
 
@@ -13,6 +14,12 @@ def process_order(self, order_id: int):
     except ConnectionError as exc:
         print(f"Произошла ошибка: {exc}. Повторим попытку...")
         raise self.retry(exc=exc, countdown=5)
+
+
+@celery_app.task(name="nightly_report")
+def nightly_report():
+    print(f"Выполнен отчет в {datetime.utcnow()}")
+    return {"status": "success", "timestamp": str(datetime.utcnow())}
 
 
 # if __name__ == "__main__":

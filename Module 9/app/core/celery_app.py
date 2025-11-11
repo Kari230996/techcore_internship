@@ -1,5 +1,6 @@
 from celery import Celery
 from kombu import Exchange, Queue
+from datetime import timedelta
 
 
 celery_app = Celery(
@@ -35,6 +36,15 @@ CELERY_TASK_QUEUES = (
     ),
     Queue("orders.dlx", Exchange("orders.dlx"), routing_key="orders.dlx"),
 )
+
+celery_app.conf.beat_schedule = {
+    "nightly_report_every_5_minutes": {
+        "task": "nightly_report",
+        "schedule": timedelta(minutes=5),
+
+    }
+}
+
 
 celery_app.conf.task_queues = CELERY_TASK_QUEUES
 celery_app.conf.task_default_queue = CELERY_TASK_DEFAULT_QUEUE
