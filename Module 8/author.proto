@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package author;
+
+// Сервис
+service AuthorService {
+  rpc GetAuthor (AuthorRequest) returns (AuthorReply);
+}
+
+// Сообщения
+message AuthorRequest {
+  int32 id = 1;
+}
+
+message AuthorReply {
+  int32 id = 1;
+  string name = 2;
+}
