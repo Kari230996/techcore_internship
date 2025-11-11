@@ -1,4 +1,6 @@
 from celery import Celery
+from kombu import Exchange, Queue
+
 
 celery_app = Celery(
     "techcore_tasks",
@@ -13,5 +15,28 @@ celery_app.conf.update(
     result_serializer="json",
     accept_content=["json"],
     timezone="UTC",
-    enable_utc=True
+    enable_utc=True,
+    task_acks_late=True,
+    task_reject_on_worker_lost=True,
+    task_default_retry_delay=5,
+    task_max_retries=3
 )
+
+CELERY_TASK_DEFAULT_QUEUE = "orders"
+CELERY_TASK_QUEUES = (
+    Queue(
+        "orders",
+        Exchange("orders"),
+        routing_key="orders",
+        queue_arguments={
+            "x-dead-letter-exchange": "orders.dlx",
+            "x-dead-letter-routing-key": "orders.dlq",
+        },
+    ),
+    Queue("orders.dlx", Exchange("orders.dlx"), routing_key="orders.dlx"),
+)
+
+celery_app.conf.task_queues = CELERY_TASK_QUEUES
+celery_app.conf.task_default_queue = CELERY_TASK_DEFAULT_QUEUE
+
+celery_app.autodiscover_tasks(["app.worker_service"])
