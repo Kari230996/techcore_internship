@@ -34,7 +34,7 @@ services:
     container_name: rabbitmq_db
     ports:
       - "5672:5672"
-      - "15772:15672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -88,20 +88,24 @@ services:
 
   fastapi_app:
     build:
-      context: ./Module 9
+      context: ./Module 10
       dockerfile: Dockerfile
     container_name: fastapi_app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ./Module 9:/app
+      - ./Module 10:/app
     ports:
       - "8000:8000"
     depends_on:
-      - redis_db
-      - rabbitmq_db
-      - postgres_db
+      kafka:
+        condition: service_healthy
+      redis_db:
+        condition: service_healthy
+      postgres_db:
+        condition: service_healthy
     environment:
       - PYTHONPATH=/app
+      - REDIS_HOST=redis_db
 
   zookeeper:
     image: wurstmeister/zookeeper
@@ -120,6 +124,10 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     depends_on:
       - zookeeper
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -z kafka 9092 || exit 1" ]
+      interval: 5s
+      retries: 20
 
   kafka_producer:
     build:
@@ -129,7 +137,6 @@ services:
       - kafka
     volumes:
       - ./Module 10:/app
-    command: python producer.py
 
 volumes:
   pg_data:
