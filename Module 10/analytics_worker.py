@@ -1,4 +1,6 @@
 from confluent_kafka import Consumer, KafkaError
+from pymongo import MongoClient
+import json
 
 
 class AnalyticsWorker:
@@ -14,6 +16,12 @@ class AnalyticsWorker:
 
         print("AnalyticsWorker готов. Слушает топик book_events...")
 
+        self.mongo = MongoClient("mongodb://mongodb:27017/")
+        self.db = self.mongo["books_analytics"]
+        self.collection = self.db["event"]
+
+        print("AnalyticsWorker подключился к MongoDB...")
+
     def run(self):
         while True:
             msg = self.consumer.poll(timeout=1.0)
@@ -27,7 +35,11 @@ class AnalyticsWorker:
                 print(f"Kafka error: {msg.error()}")
                 continue
 
-            print(f"Получено сообщение: {msg.value().decode('utf-8')}")
+            data = json.loads(msg.value().decode('utf-8'))
+            print(f"Получено сообщение: {data}")
+
+            self.collection.insert_one(data)
+            print("Сообщение сохранено в MongoDB...")
 
 
 if __name__ == "__main__":
