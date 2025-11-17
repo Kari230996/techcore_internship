@@ -33,6 +33,7 @@ while True:
 
     producer.produce(
         "book_events",
+        key=str(i),
         value=json.dumps(data),
         callback=delivery_report
     )

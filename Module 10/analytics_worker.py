@@ -36,9 +36,13 @@ class AnalyticsWorker:
                 continue
 
             data = json.loads(msg.value().decode('utf-8'))
-            print(f"Получено сообщение: {data}")
+            partition = msg.partition()
+            print(f"[Partition {partition}] Получено сообщение: {data}")
 
-            self.collection.insert_one(data)
+            self.collection.insert_one({
+                "partition": partition,
+                "data": data
+            })
             print("Сообщение сохранено в MongoDB...")
 
 
