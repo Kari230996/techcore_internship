@@ -3,6 +3,7 @@ from pymongo import MongoClient
 import json
 
 
+
 class AnalyticsWorker:
 
     def __init__(self):

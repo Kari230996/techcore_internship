@@ -146,6 +146,16 @@ services:
       kafka:
         condition: service_healthy
 
+  analytics_worker_async:
+    build:
+      context: ./Module 10
+    command: [ "python", "analytics_worker_async.py" ]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./Module 10:/app
+
 volumes:
   pg_data:
   redis_data:
