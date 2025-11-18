@@ -10,6 +10,8 @@ class AnalyticsWorker:
             "bootstrap.servers": "kafka:9092",
             "group.id": "analytics",
             "auto.offset.reset": "earliest",
+            "enable.auto.commit": False,
+            "enable.auto.offset.store": False,
         })
 
         self.consumer.subscribe(["book_events"])
@@ -34,16 +36,19 @@ class AnalyticsWorker:
                     continue
                 print(f"Kafka error: {msg.error()}")
                 continue
+            try:
+                data = json.loads(msg.value().decode('utf-8'))
+                partition = msg.partition()
+                print(f"[Partition {partition}] Получено сообщение: {data}")
 
-            data = json.loads(msg.value().decode('utf-8'))
-            partition = msg.partition()
-            print(f"[Partition {partition}] Получено сообщение: {data}")
-
-            self.collection.insert_one({
-                "partition": partition,
-                "data": data
-            })
-            print("Сообщение сохранено в MongoDB...")
+                self.collection.insert_one({
+                    "partition": partition,
+                    "data": data
+                })
+                print("Сообщение сохранено в MongoDB...")
+            except Exception as e:
+                print(f"Произошла ошибка: {e}")
+        
 
 
 if __name__ == "__main__":
