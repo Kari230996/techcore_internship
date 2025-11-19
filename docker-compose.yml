@@ -180,6 +180,29 @@ services:
       kafka:
         condition: service_healthy
 
+  # --------------------- Gateway API ---------------------
+  gateway_api:
+    build:
+      context: ./Module 11/gateway
+    container_name: gateway
+    command:
+      [
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ]
+    ports:
+      - "9000:8000"
+    volumes:
+      - ./Module 11/gateway:/app
+    depends_on:
+      - kafka
+      - redis_db
+      - postgres_db
+
 # --------------------- VOLUMES ---------------------
 volumes:
   pg_data:
