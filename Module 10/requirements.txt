@@ -38,7 +38,7 @@ flower==2.0.1
 frozenlist==1.8.0
 greenlet==3.2.4
 grpcio==1.76.0
-book_events=1.76.0
+# grpcio-tools==1.76.0
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
