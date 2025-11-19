@@ -116,6 +116,10 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_DELETE_TOPIC_ENABLE: "true"
+
+      KAFKA_NUM_PARTITIONS: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
     volumes:
       - kafka_data:/kafka/kafka-logs
     depends_on:
@@ -150,6 +154,16 @@ services:
     build:
       context: ./Module 10
     command: [ "python", "analytics_worker_async.py" ]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./Module 10:/app
+
+  faust_worker:
+    build:
+      context: ./Module 10
+    command: [ "faust", "-A", "worker", "worker", "-l", "info" ]
     depends_on:
       kafka:
         condition: service_healthy
