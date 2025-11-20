@@ -1,3 +1,6 @@
+#
+
+
 # Добавление сервисов в docker-compose
 
 ## Выполненные задачи
@@ -45,6 +48,19 @@ docker-compose up --build
 Критерий приёмки выполнен:
 
 > `docker-compose up --build` собирает и запускает **10+ контейнеров**.
+
+
+# Задача: Gateway (Service Discovery)
+
+Gateway использует DNS-имена docker-compose:
+
+BOOK_SERVICE_URL = "http://fastapi_app:8000"
+
+localhost не используется. Маршрутизация работает корректно:
+Gateway (9000) -> fastapi_app (8000) через сервисное имя fastapi_app.
+
+Критерий приёмки выполнен.
+
 
 
 
