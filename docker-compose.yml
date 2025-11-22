@@ -18,6 +18,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - traefik-net
 
   redis_db:
     image: redis:alpine
@@ -31,6 +33,9 @@ services:
       interval: 5s
       retries: 5
 
+    networks:
+      - traefik-net
+
   mongodb:
     image: mongo:6
     container_name: mongodb
@@ -38,6 +43,9 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+
+    networks:
+      - traefik-net
 
   # --------------------- RABBITMQ ---------------------
   rabbitmq_db:
@@ -51,6 +59,9 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+
+    networks:
+      - traefik-net
 
   # --------------------- ZIPKIN ---------------------
   zipkin:
@@ -119,7 +130,8 @@ services:
     command: celery --broker=amqp://guest:guest@rabbitmq_db:5672// flower --port=5555
     depends_on:
       - rabbitmq_db
-    # --------------------- API GATEWAY (FastAPI) ---------------------
+
+  # --------------------- API MICROSERVICES ---------------------
   book-service:
     build:
       context: ./Module 11/book_service
@@ -127,10 +139,20 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./Module 11/book_service:/app
-    ports:
-      - "8000:8000"
     depends_on:
-      - postgres_db
+      postgres_db:
+        condition: service_healthy
+
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres_db:5432/books_db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bookservice.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.bookservice.service=bookservice"
+      - "traefik.http.services.bookservice.loadbalancer.server.port=8000"
+
+    networks:
+      - traefik-net
 
   review-service:
     build:
@@ -139,10 +161,31 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
     volumes:
       - ./Module 11/review_service:/app
-    ports:
-      - "8001:8001"
+    expose:
+      - "8001"
     depends_on:
       - mongodb
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.review.rule=PathPrefix(`/api/reviews`)"
+      - "traefik.http.services.review.loadbalancer.server.port=8001"
+    networks:
+      - traefik-net
+
+  # --------------------- TRAEFIK ---------------------
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedByDefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "8081:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-net
 
   # --------------------- KAFKA WORKERS ---------------------
   kafka_producer:
@@ -211,6 +254,9 @@ services:
       - redis_db
       - postgres_db
 
+    networks:
+      - traefik-net
+
 # --------------------- VOLUMES ---------------------
 volumes:
   pg_data:
@@ -218,3 +264,8 @@ volumes:
   rabbitmq_data:
   mongo_data:
   kafka_data:
+
+
+networks:
+  traefik-net:
+    driver: bridge
