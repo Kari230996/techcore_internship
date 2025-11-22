@@ -1,6 +1,7 @@
 version: "3.9"
 
 services:
+  # --------------------- DATABASES ---------------------
   postgres_db:
     image: postgres:15
     container_name: postgres_db
@@ -10,12 +11,15 @@ services:
       POSTGRES_DB: books_db
     ports:
       - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
-      retries: 5
-    volumes:
-      - pg_data:/var/lib/postgresql/data
+      timeout: 5s
+      retries: 10
+    networks:
+      - traefik-net
 
   redis_db:
     image: redis:alpine
@@ -29,81 +33,239 @@ services:
       interval: 5s
       retries: 5
 
+    networks:
+      - traefik-net
+
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+    networks:
+      - traefik-net
+
+  # --------------------- RABBITMQ ---------------------
   rabbitmq_db:
     image: rabbitmq:3-management
     container_name: rabbitmq_db
-    ports:
-      - "5672:5672"
-      - "15772:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-    restart: unless-stopped
 
+    networks:
+      - traefik-net
+
+  # --------------------- ZIPKIN ---------------------
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
+  # --------------------- KAFKA + ZOOKEEPER ---------------------
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/kafka
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -z localhost 9092" ]
+      interval: 5s
+      retries: 15
+
+  # --------------------- CELERY ---------------------
   celery_worker:
     build:
       context: ./Module 9
-      dockerfile: Dockerfile
     container_name: celery_worker
     command: celery -A app.core.celery_app worker --loglevel=info
+    volumes:
+      - ./Module 9:/app
     depends_on:
       - rabbitmq_db
       - redis_db
-    volumes:
-      - ./Module 9:/app
-    environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq_db:5672//
-      - CELERY_RESULT_BACKEND=redis://redis_db:6379/0
 
   celery_beat:
     build:
       context: ./Module 9
-      dockerfile: Dockerfile
     container_name: celery_beat
     command: celery -A app.core.celery_app.celery_app beat --loglevel=info
+    volumes:
+      - ./Module 9:/app
     depends_on:
       - rabbitmq_db
       - redis_db
-    volumes:
-      - ./Module 9:/app
-    environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq_db:5672//
-      - CELERY_RESULT_BACKEND=redis://redis_db:6379/0
 
   flower:
     image: mher/flower
     container_name: flower
-    command: celery --broker=amqp://guest:guest@rabbitmq_db:5672// flower --port=5555
     ports:
       - "5555:5555"
+    command: celery --broker=amqp://guest:guest@rabbitmq_db:5672// flower --port=5555
     depends_on:
       - rabbitmq_db
-      - redis_db
-      - celery_worker
-    environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq_db:5672//
-      - CELERY_RESULT_BACKEND=redis://redis_db:6379/0
 
-  fastapi_app:
+  # --------------------- API MICROSERVICES ---------------------
+  book-service:
     build:
-      context: ./Module 9
-      dockerfile: Dockerfile
-    container_name: fastapi_app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      context: ./Module 11/book_service
+    container_name: book-service
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ./Module 9:/app
-    ports:
-      - "8000:8000"
+      - ./Module 11/book_service:/app
     depends_on:
-      - redis_db
-      - rabbitmq_db
-      - postgres_db
-    environment:
-      - PYTHONPATH=/app
+      postgres_db:
+        condition: service_healthy
 
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres_db:5432/books_db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bookservice.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.bookservice.service=bookservice"
+      - "traefik.http.services.bookservice.loadbalancer.server.port=8000"
+
+    networks:
+      - traefik-net
+
+  review-service:
+    build:
+      context: ./Module 11/review_service
+    container_name: review-service
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./Module 11/review_service:/app
+    expose:
+      - "8001"
+    depends_on:
+      - mongodb
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.review.rule=PathPrefix(`/api/reviews`)"
+      - "traefik.http.services.review.loadbalancer.server.port=8001"
+    networks:
+      - traefik-net
+
+  # --------------------- TRAEFIK ---------------------
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedByDefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "8081:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-net
+
+  # --------------------- KAFKA WORKERS ---------------------
+  kafka_producer:
+    build:
+      context: ./Module 10
+    container_name: kafka_producer
+    command: [ "python", "producer.py" ]
+    volumes:
+      - ./Module 10:/app
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  analytics_worker:
+    build:
+      context: ./Module 10
+    command: [ "python", "analytics_worker.py" ]
+    volumes:
+      - ./Module 10:/app
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  analytics_worker_async:
+    build:
+      context: ./Module 10
+    command: [ "python", "analytics_worker_async.py" ]
+    volumes:
+      - ./Module 10:/app
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  faust_worker:
+    build:
+      context: ./Module 10
+    command: [ "faust", "-A", "worker", "worker", "-l", "info" ]
+    volumes:
+      - ./Module 10:/app
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # --------------------- Gateway API ---------------------
+  gateway_api:
+    build:
+      context: ./Module 11/gateway
+    container_name: gateway
+    command:
+      [
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ]
+    env_file:
+      - ./Module 11/gateway/.env
+    ports:
+      - "9000:8000"
+    volumes:
+      - ./Module 11/gateway:/app
+    depends_on:
+      - kafka
+      - redis_db
+      - postgres_db
+
+    networks:
+      - traefik-net
+
+# --------------------- VOLUMES ---------------------
 volumes:
   pg_data:
   redis_data:
   rabbitmq_data:
+  mongo_data:
+  kafka_data:
+
+
+networks:
+  traefik-net:
+    driver: bridge
