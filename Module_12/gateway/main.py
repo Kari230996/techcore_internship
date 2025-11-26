@@ -59,3 +59,10 @@ async def get_book_details(
             "book": book_response.json(),
             "reviews": reviews
         }
+
+
+@app.post("/book")
+async def create_book_proxy(book: dict):
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://book-service:8000/book", json=book)
+        return response.json()
