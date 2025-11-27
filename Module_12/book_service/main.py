@@ -7,9 +7,13 @@ from opentelemetry.trace import get_current_span
 from otel import setup_metrics
 from prometheus_client import make_asgi_app
 import json
+from prometheus_client import start_http_server
 
 from routers.books_router import router as books_router
 from routers.authors_router import router as authors_router
+from otel_metrics import increment_books_created
+
+start_http_server(8001)
 
 app = FastAPI(title="Book Service")
 

@@ -155,6 +155,9 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./Module_12/book_service:/app
+    ports:
+      - "8000:8000"
+      - "8001:8001"
     depends_on:
       postgres_db:
         condition: service_healthy
