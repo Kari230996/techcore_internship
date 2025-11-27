@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from init_db import init_db
-from routers.books_router import books_router
+from routers import books_router
 
 app = FastAPI(
     title="Techcore Internship API",
