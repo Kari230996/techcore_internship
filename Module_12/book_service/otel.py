@@ -1,4 +1,6 @@
-from opentelemetry import trace
+from opentelemetry import trace, metrics
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.zipkin.json import ZipkinExporter
@@ -6,9 +8,9 @@ from opentelemetry.exporter.zipkin.json import ZipkinExporter
 from opentelemetry.sdk.resources import Resource
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+# from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.instrumentation.celery import CeleryInstrumentor
+# from opentelemetry.instrumentation.celery import CeleryInstrumentor
 
 
 def setup_otel(app=None, engine=None, service_name="default-service"):
@@ -26,7 +28,7 @@ def setup_otel(app=None, engine=None, service_name="default-service"):
     if app:
         FastAPIInstrumentor().instrument_app(app)
 
-    HTTPXClientInstrumentor().instrument()
+    # HTTPXClientInstrumentor().instrument()
 
     if engine is not None:
         if hasattr(engine, "sync_engine"):
@@ -35,4 +37,28 @@ def setup_otel(app=None, engine=None, service_name="default-service"):
             print(
                 "SQLAlchemy async engine detected, using sync_engine fallback not available")
 
-    CeleryInstrumentor().instrument()
+    # CeleryInstrumentor().instrument()
+
+
+def setup_metrics(app):
+    resource = Resource(attributes={"service.name": "book-service"})
+
+    reader = PrometheusMetricReader()
+
+    provider = MeterProvider(
+        metric_readers=[reader],
+        resource=resource
+    )
+
+    metrics.set_meter_provider(provider)
+
+    meter = metrics.get_meter("book-service-meter")
+
+    # Пример метрики — счетчик созданных книг
+    app.book_counter = meter.create_counter(
+        name="books_created_total",
+        description="Total created books",
+        unit="1"
+    )
+
+    return reader

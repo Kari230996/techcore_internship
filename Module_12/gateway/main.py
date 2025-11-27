@@ -3,7 +3,11 @@ import httpx
 import asyncio
 from auth import require_role
 from otel import setup_otel
-
+import time
+from prometheus_client import start_http_server, Counter, Histogram
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from fastapi.responses import Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
 app = FastAPI(title="Gateway API")
 
@@ -11,6 +15,18 @@ setup_otel(app, service_name="gateway")
 
 BOOK_SERVICE_URL = "http://book-service:8000"
 REVIEW_SERVICE_URL = "http://review-service:8001"
+
+REQUEST_COUNT = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint"]
+)
+
+REQUEST_LATENCY = Histogram(
+    "http_request_duration_seconds",
+    "Request latency",
+    ["endpoint"]
+)
 
 
 @app.get("/")
@@ -66,3 +82,30 @@ async def create_book_proxy(book: dict):
     async with httpx.AsyncClient() as client:
         response = await client.post("http://book-service:8000/book", json=book)
         return response.json()
+
+
+class PrometheusMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        start_time = time.time()
+
+        response = await call_next(request)
+
+        REQUEST_COUNT.labels(
+            method=request.method,
+            endpoint=request.url.path
+        ).inc()
+
+        REQUEST_LATENCY.labels(
+            endpoint=request.url.path
+        ).observe(time.time() - start_time)
+
+        return response
+
+
+@app.get("/metrics")
+async def metrics():
+    return Response(generate_latest(),
+                    media_type=CONTENT_TYPE_LATEST)
+
+
+app.add_middleware(PrometheusMiddleware)

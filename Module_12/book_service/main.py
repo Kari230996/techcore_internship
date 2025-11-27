@@ -4,6 +4,8 @@ from models import Base
 from otel import setup_otel
 from confluent_kafka import Producer
 from opentelemetry.trace import get_current_span
+from otel import setup_metrics
+from prometheus_client import make_asgi_app
 import json
 
 from routers.books_router import router as books_router
@@ -11,7 +13,14 @@ from routers.authors_router import router as authors_router
 
 app = FastAPI(title="Book Service")
 
+setup_otel(app=app, engine=engine, service_name="book-service")
+
+reader = setup_metrics(app)
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
+
 producer = Producer({"bootstrap.servers": "kafka:9092"})
+
 
 def send_kafka_event(event_data):
     span = get_current_span()
@@ -32,6 +41,7 @@ def send_kafka_event(event_data):
     )
     producer.flush()
 
+
 @app.on_event("startup")
 async def startup_event():
 
@@ -39,6 +49,7 @@ async def startup_event():
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
 
 @app.post("/book")
 async def create_book(book: dict):

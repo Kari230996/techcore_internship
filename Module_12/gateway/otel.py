@@ -7,7 +7,7 @@ from opentelemetry.sdk.resources import Resource
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.instrumentation.celery import CeleryInstrumentor
+# from opentelemetry.instrumentation.celery import CeleryInstrumentor
 
 
 def setup_otel(app=None, engine=None, service_name="default-service"):
@@ -27,4 +27,4 @@ def setup_otel(app=None, engine=None, service_name="default-service"):
 
     HTTPXClientInstrumentor().instrument()
 
-    CeleryInstrumentor().instrument()
+    # CeleryInstrumentor().instrument()

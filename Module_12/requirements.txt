@@ -1,8 +1,6 @@
-confluent-kafka==2.2.0
-pymongo==4.6.1
-
-
-opentelemetry-api
+confluent-kafka
+pymongo
 opentelemetry-sdk
 opentelemetry-exporter-zipkin
-opentelemetry-instrumentation
+opentelemetry-exporter-prometheus
+prometheus-client
