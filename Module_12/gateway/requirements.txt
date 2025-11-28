@@ -11,3 +11,7 @@ prometheus-client
 
 
 python-jose[cryptography]
+
+structlog
+opentelemetry-instrumentation-logging
+python-json-logger

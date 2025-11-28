@@ -6,16 +6,22 @@ from confluent_kafka import Producer
 from opentelemetry.trace import get_current_span
 from otel import setup_metrics
 from prometheus_client import make_asgi_app
-import json
 from prometheus_client import start_http_server
+from logging_config import setup_logging
+import json
 
 from routers.books_router import router as books_router
 from routers.authors_router import router as authors_router
-from otel_metrics import increment_books_created
+
+
+
+logger = setup_logging()
+
 
 start_http_server(8001)
 
 app = FastAPI(title="Book Service")
+
 
 setup_otel(app=app, engine=engine, service_name="book-service")
 
@@ -33,8 +39,8 @@ def send_kafka_event(event_data):
     headers = {}
 
     if span_context.is_valid:
-        trace_id = format(span_context.trace_id, "032x")
-        span_id = format(span_context.span_id, "016x")
+        trace_id = f"{span_context.trace_id:032x}"
+        span_id = f"{span_context.span_id:016x}"
 
         headers["traceparent"] = f"00-{trace_id}-{span_id}-01"
 
@@ -48,17 +54,22 @@ def send_kafka_event(event_data):
 
 @app.on_event("startup")
 async def startup_event():
+    logger.info("book-service started")
 
     setup_otel(app=app, engine=engine, service_name="book-service")
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    logger.info("database tables created")
+
 
 @app.post("/book")
 async def create_book(book: dict):
+    logger.info("create_book called", book=book)
     send_kafka_event({"event": "book_created", "book": book})
     return {"status": "ok"}
+
 
 app.include_router(authors_router, prefix="/api")
 app.include_router(books_router, prefix="/api")

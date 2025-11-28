@@ -9,3 +9,7 @@ opentelemetry-instrumentation-sqlalchemy
 opentelemetry-exporter-zipkin
 opentelemetry-exporter-prometheus
 prometheus-client
+
+structlog
+opentelemetry-instrumentation-logging
+python-json-logger

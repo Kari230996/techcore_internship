@@ -6,3 +6,8 @@ opentelemetry-exporter-prometheus
 prometheus-client
 opentelemetry-api
 opentelemetry-semantic-conventions
+
+
+structlog
+opentelemetry-instrumentation-logging
+python-json-logger
