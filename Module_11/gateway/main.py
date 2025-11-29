@@ -4,7 +4,6 @@ import asyncio
 from auth import require_role
 
 
-
 app = FastAPI(title="Gateway API")
 
 BOOK_SERVICE_URL = "http://book-service:8000"
