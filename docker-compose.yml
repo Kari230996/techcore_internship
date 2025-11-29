@@ -116,16 +116,18 @@ services:
       - traefik-net
 
   # --------------------- CELERY ---------------------
-  # celery_worker:
-  #   build:
-  #     context: ./Module 9
-  #   container_name: celery_worker
-  #   command: celery -A app.core.celery_app worker --loglevel=info
-  #   volumes:
-  #     - ./Module 9:/app
-  #   depends_on:
-  #     - rabbitmq_db
-  #     - redis_db
+  celery_worker:
+    build:
+      context: ./Module_12/celery_worker
+    container_name: celery_worker
+    # command: celery -A celery_app worker --loglevel=info
+    # volumes:
+    #   - ./Module_12:/app
+    depends_on:
+      - rabbitmq_db
+      - redis_db
+    networks:
+      - traefik-net
 
   # celery_beat:
   #   build:
@@ -138,14 +140,18 @@ services:
   #     - rabbitmq_db
   #     - redis_db
 
-  # flower:
-  #   image: mher/flower
-  #   container_name: flower
-  #   ports:
-  #     - "5555:5555"
-  #   command: celery --broker=amqp://guest:guest@rabbitmq_db:5672// flower --port=5555
-  #   depends_on:
-  #     - rabbitmq_db
+  flower:
+    image: mher/flower
+    container_name: flower
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq_db:5672//
+    ports:
+      - "5555:5555"
+    depends_on:
+      - rabbitmq_db
+      - celery_worker
+    networks:
+      - traefik-net
 
   # --------------------- API MICROSERVICES ---------------------
   book-service:
