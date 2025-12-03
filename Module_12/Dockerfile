@@ -8,4 +8,5 @@ RUN pip install --default-timeout=200 --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "analytics_worker.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# CMD ["python", "analytics_worker.py"]
