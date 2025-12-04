@@ -1,0 +1,30 @@
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.zipkin.json import ZipkinExporter
+
+from opentelemetry.sdk.resources import Resource
+
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+# from opentelemetry.instrumentation.celery import CeleryInstrumentor
+
+
+def setup_otel(app=None, engine=None, service_name="default-service"):
+    resource = Resource(attributes={"service.name": service_name})
+
+    provider = TracerProvider(resource=resource)
+    trace.set_tracer_provider(provider)
+
+    zipkin_exporter = ZipkinExporter(
+        endpoint="http://zipkin:9411/api/v2/spans",
+    )
+
+    provider.add_span_processor(BatchSpanProcessor(zipkin_exporter))
+
+    if app:
+        FastAPIInstrumentor().instrument_app(app)
+
+    HTTPXClientInstrumentor().instrument()
+
+    # CeleryInstrumentor().instrument()

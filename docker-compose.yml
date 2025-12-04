@@ -69,6 +69,18 @@ services:
     container_name: zipkin
     ports:
       - "9411:9411"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "http://localhost:9411/health"
+        ]
+      interval: 5s
+      retries: 10
+    networks:
+      - traefik-net
 
   # --------------------- KAFKA + ZOOKEEPER ---------------------
   zookeeper:
@@ -76,6 +88,8 @@ services:
     container_name: zookeeper
     ports:
       - "2181:2181"
+    networks:
+      - traefik-net
 
   kafka:
     image: wurstmeister/kafka
@@ -98,47 +112,58 @@ services:
       test: [ "CMD-SHELL", "nc -z localhost 9092" ]
       interval: 5s
       retries: 15
+    networks:
+      - traefik-net
 
   # --------------------- CELERY ---------------------
   celery_worker:
     build:
-      context: ./Module 9
+      context: ./Module_12/celery_worker
     container_name: celery_worker
-    command: celery -A app.core.celery_app worker --loglevel=info
-    volumes:
-      - ./Module 9:/app
+    # command: celery -A celery_app worker --loglevel=info
+    # volumes:
+    #   - ./Module_12:/app
     depends_on:
       - rabbitmq_db
       - redis_db
+    networks:
+      - traefik-net
 
-  celery_beat:
-    build:
-      context: ./Module 9
-    container_name: celery_beat
-    command: celery -A app.core.celery_app.celery_app beat --loglevel=info
-    volumes:
-      - ./Module 9:/app
-    depends_on:
-      - rabbitmq_db
-      - redis_db
+  # celery_beat:
+  #   build:
+  #     context: ./Module 9
+  #   container_name: celery_beat
+  #   command: celery -A app.core.celery_app.celery_app beat --loglevel=info
+  #   volumes:
+  #     - ./Module 9:/app
+  #   depends_on:
+  #     - rabbitmq_db
+  #     - redis_db
 
   flower:
     image: mher/flower
     container_name: flower
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq_db:5672//
     ports:
       - "5555:5555"
-    command: celery --broker=amqp://guest:guest@rabbitmq_db:5672// flower --port=5555
     depends_on:
       - rabbitmq_db
+      - celery_worker
+    networks:
+      - traefik-net
 
   # --------------------- API MICROSERVICES ---------------------
   book-service:
     build:
-      context: ./Module 11/book_service
+      context: ./Module_12/book_service
     container_name: book-service
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
     volumes:
-      - ./Module 11/book_service:/app
+      - ./Module_12/book_service:/app
+    ports:
+      - "8000:8000"
+      - "8001:8001"
     depends_on:
       postgres_db:
         condition: service_healthy
@@ -154,23 +179,23 @@ services:
     networks:
       - traefik-net
 
-  review-service:
-    build:
-      context: ./Module 11/review_service
-    container_name: review-service
-    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
-    volumes:
-      - ./Module 11/review_service:/app
-    expose:
-      - "8001"
-    depends_on:
-      - mongodb
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.review.rule=PathPrefix(`/api/reviews`)"
-      - "traefik.http.services.review.loadbalancer.server.port=8001"
-    networks:
-      - traefik-net
+  # review-service:
+  #   build:
+  #     context: ./Module 11/review_service
+  #   container_name: review-service
+  #   command: uvicorn main:app --host 0.0.0.0 --port 8001
+  #   volumes:
+  #     - ./Module 11/review_service:/app
+  #   expose:
+  #     - "8001"
+  #   depends_on:
+  #     - mongodb
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.review.rule=PathPrefix(`/api/reviews`)"
+  #     - "traefik.http.services.review.loadbalancer.server.port=8001"
+  #   networks:
+  #     - traefik-net
 
   # --------------------- TRAEFIK ---------------------
   traefik:
@@ -188,51 +213,55 @@ services:
       - traefik-net
 
   # --------------------- KAFKA WORKERS ---------------------
-  kafka_producer:
-    build:
-      context: ./Module 10
-    container_name: kafka_producer
-    command: [ "python", "producer.py" ]
-    volumes:
-      - ./Module 10:/app
-    depends_on:
-      kafka:
-        condition: service_healthy
+  # kafka_producer:
+  #   build:
+  #     context: ./Module 10
+  #   container_name: kafka_producer
+  #   command: [ "python", "producer.py" ]
+  #   volumes:
+  #     - ./Module 10:/app
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
 
   analytics_worker:
     build:
-      context: ./Module 10
+      context: ./Module_12
     command: [ "python", "analytics_worker.py" ]
     volumes:
-      - ./Module 10:/app
+      - ./Module_12:/app
     depends_on:
       kafka:
         condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - traefik-net
 
-  analytics_worker_async:
-    build:
-      context: ./Module 10
-    command: [ "python", "analytics_worker_async.py" ]
-    volumes:
-      - ./Module 10:/app
-    depends_on:
-      kafka:
-        condition: service_healthy
+  # analytics_worker_async:
+  #   build:
+  #     context: ./Module 10
+  #   command: [ "python", "analytics_worker_async.py" ]
+  #   volumes:
+  #     - ./Module 10:/app
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
 
-  faust_worker:
-    build:
-      context: ./Module 10
-    command: [ "faust", "-A", "worker", "worker", "-l", "info" ]
-    volumes:
-      - ./Module 10:/app
-    depends_on:
-      kafka:
-        condition: service_healthy
+  # faust_worker:
+  #   build:
+  #     context: ./Module 10
+  #   command: [ "faust", "-A", "worker", "worker", "-l", "info" ]
+  #   volumes:
+  #     - ./Module 10:/app
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
 
   # --------------------- Gateway API ---------------------
   gateway_api:
     build:
-      context: ./Module 11/gateway
+      context: ./Module_12/gateway
     container_name: gateway
     command:
       [
@@ -244,18 +273,81 @@ services:
         "8000"
       ]
     env_file:
-      - ./Module 11/gateway/.env
+      - ./Module_12/gateway/.env
     ports:
       - "9000:8000"
     volumes:
-      - ./Module 11/gateway:/app
+      - ./Module_12/gateway:/app
     depends_on:
       - kafka
       - redis_db
       - postgres_db
 
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=PathPrefix(`/`)"
+      - "traefik.http.services.gateway.loadbalancer.server.port=8000"
+
     networks:
       - traefik-net
+
+  # --------------------- Prometheus ---------------------
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    networks:
+      - traefik-net
+    volumes:
+      - ./Module_12/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  # --------------------- Grafana ---------------------
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - traefik-net
+
+  # --------------------- Loki ---------------------
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./Module_12/loki-config.yaml:/etc/loki/local-config.yaml
+      - ./Module_12/loki:/loki
+    networks:
+      - traefik-net
+
+  # --------------------- Promtail ---------------------
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - /var/log:/var/log
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./Module_12/promtail-config.yaml:/etc/promtail/config.yaml
+    command: -config.file=/etc/promtail/config.yaml
+    networks:
+      - traefik-net
+    depends_on:
+      - loki
 
 # --------------------- VOLUMES ---------------------
 volumes:
@@ -264,6 +356,7 @@ volumes:
   rabbitmq_data:
   mongo_data:
   kafka_data:
+  grafana_data:
 
 
 networks:
