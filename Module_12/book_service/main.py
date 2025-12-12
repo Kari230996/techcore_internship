@@ -14,7 +14,6 @@ from routers.books_router import router as books_router
 from routers.authors_router import router as authors_router
 
 
-
 logger = setup_logging()
 
 
@@ -30,6 +29,7 @@ metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
 producer = Producer({"bootstrap.servers": "kafka:9092"})
+
 
 
 def send_kafka_event(event_data):

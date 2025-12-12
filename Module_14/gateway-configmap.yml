@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+data:
+  SERVICE_BOOK_URL: "http://fastapi-book-service:8000"
+  REDIS_URL: "redis://redis-master:6379/0"
+  KAFKA_TOPIC: "book-events"

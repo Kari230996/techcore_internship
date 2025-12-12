@@ -33,6 +33,11 @@ REQUEST_LATENCY = Histogram(
 )
 
 
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+
 @breaker
 def call_book_service_sync(url: str):
     """
