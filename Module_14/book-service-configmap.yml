@@ -9,3 +9,5 @@ data:
   REDIS_URL: "redis-master.default.svc.cluster.local:6379"
   RABBITMQ_URL: "amqp://user:supersecret@rabbitmq.default.svc.cluster.local:5672/"
   ZIPKIN_URL: "http://zipkin.default.svc.cluster.local:9411/api/v2/spans"
+
+
