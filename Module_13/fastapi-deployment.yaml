@@ -25,6 +25,22 @@ spec:
             - secretRef:
                 name: postgres-secret
 
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "fastapi-book-service"
+
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+
+            - name: OTEL_EXPORTER_ZIPKIN_ENDPOINT
+              value: "http://jaeger-collector.monitoring:4317"
+            
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "grpc"
+
+
+
+
     
 
 

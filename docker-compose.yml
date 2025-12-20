@@ -47,6 +47,12 @@ services:
     networks:
       - traefik-net
 
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # --------------------- RABBITMQ ---------------------
   rabbitmq_db:
     image: rabbitmq:3-management
