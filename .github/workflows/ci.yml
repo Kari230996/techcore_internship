@@ -31,4 +31,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t techcore-app .
+          docker build \
+            -t techcore-app \
+            -f Module_12/book_service/Dockerfile \
+            Module_12/book_service
