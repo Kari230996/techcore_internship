@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fastapi-book-service-canary
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "20"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: book.local
+      http:
+        paths:
+          - path: /version
+            pathType: Prefix
+            backend:
+              service:
+                name: fastapi-book-service-canary
+                port:
+                  number: 8000

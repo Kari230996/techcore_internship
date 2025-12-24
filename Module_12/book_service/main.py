@@ -21,6 +21,9 @@ logger = setup_logging()
 # ---------------- APP ----------------
 app = FastAPI(title="Book Service")
 
+# ---------------- APP VERSION ----------------
+APP_VERSION = os.getenv("APP_VERSION", "v1")
+
 
 # ---------------- OTel (ОДИН РАЗ) ----------------
 setup_otel(
@@ -34,8 +37,14 @@ setup_metrics(app)
 app.mount("/metrics", make_asgi_app())
 
 
+# ---------------- VERSIONS ----------------
+@app.get("/version")
+def version():
+    return {"version": APP_VERSION}
+
+
 # ---------------- KAFKA ----------------
-producer = None  
+producer = None
 
 
 def init_kafka():
@@ -93,7 +102,6 @@ async def startup_event():
 
     logger.info("database tables created")
 
-  
     init_kafka()
 
 
