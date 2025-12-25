@@ -3,9 +3,10 @@ kind: ConfigMap
 metadata:
   name: book-service-config
 data:
-  DATABASE_URL: "postgresql+asyncpg://postgres:supersecret@postgresql:5432/books_db"
-  MONGO_URL: "mongodb://mongodb:27017"
-  KAFKA_BOOTSTRAP_SERVERS: "kafka-controller-0.kafka-controller-headless.default.svc.cluster.local:9092"
-  REDIS_URL: "redis-master.default.svc.cluster.local:6379"
-  RABBITMQ_URL: "amqp://user:supersecret@rabbitmq.default.svc.cluster.local:5672/"
-  ZIPKIN_URL: "http://zipkin.default.svc.cluster.local:9411/api/v2/spans"
+  DATABASE_URL: "postgresql+asyncpg://postgres:supersecret@postgres-service.default.svc.cluster.local:5432/books_db"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.monitoring.svc.cluster.local:9092"
+  
+  
+
+
+

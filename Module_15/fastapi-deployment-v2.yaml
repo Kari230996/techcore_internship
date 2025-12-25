@@ -1,20 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fastapi-book-service
+  name: fastapi-book-service-v2
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: fastapi-book-service
+      version: v2
   template:
     metadata:
       labels:
         app: fastapi-book-service
+        version: v2
     spec:
       containers:
         - name: app
-          image: karinaapi/techcore-book-service:v1
+          image: karinaapi/techcore-book-service:v2
           ports:
             - containerPort: 8000
 
@@ -26,4 +28,4 @@ spec:
 
           env:
             - name: APP_VERSION
-              value: "v1"
+              value: "v2"

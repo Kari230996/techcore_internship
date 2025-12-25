@@ -11,3 +11,6 @@ opentelemetry-semantic-conventions
 structlog
 opentelemetry-instrumentation-logging
 python-json-logger
+
+fastapi
+uvicorn[standard]
